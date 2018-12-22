@@ -1,3 +1,4 @@
 # Ignore files/dirs
 *.mp3
-reconst_*.wav
+*.wav
+fast_griffin_lim.py

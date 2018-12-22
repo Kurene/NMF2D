@@ -16,11 +16,10 @@ def plotspec(V, W, H, L, y_axis='cqt_note'):
     plt.colorbar(format='%+2.0f dB')
 
     plt.subplot(2,2,2)
-    if W.shape[1]==2:
-        W = W[::-1,:]       
-    librosa.display.specshow(W, y_axis=y_axis, cmap='jet')
-    plt.title('Reconst. spec.')
-    plt.colorbar()
+    W = W[::-1,:] if W.shape[1] == 2 else W      
+    librosa.display.specshow(librosa.amplitude_to_db(W), y_axis=y_axis, cmap='jet')
+    plt.title('Basis')
+    plt.colorbar(format='%+2.0f dB')
 
     plt.subplot(2,2,3)
     librosa.display.specshow(librosa.amplitude_to_db(L, ref=np.max),
@@ -35,6 +34,7 @@ def plotspec(V, W, H, L, y_axis='cqt_note'):
     
     plt.tight_layout()
     plt.show()
+    plt.savefig('plotspec.png')
       
 
 if __name__ == "__main__":
@@ -45,12 +45,13 @@ if __name__ == "__main__":
     n_iter = int(sys.argv[5])
     sr = 16000
     n_fft = 1024
-    hop_length = 512
+    hop_length = 128
     window = "hann"
     offset = 0
-    duration = 30
+    duration = 15
     n_bins = 84
     y_axis = "cqt_note"
+    H_sparsity = 0.0
 
     y, sr = librosa.core.load(path, sr=16000, offset=offset, duration=duration, mono=True)
     #X = librosa.stft(y, n_fft=n_fft, hop_length=hop_length)
@@ -59,16 +60,16 @@ if __name__ == "__main__":
     X_gain = np.max(X_abs)
     X_abs /= X_gain
     
-    model = NMF2D(n_basis, n_frames, n_pitches, n_iter)
+    model = NMF2D(n_basis, n_frames, n_pitches, n_iter, H_sparsity=H_sparsity)
     W, H = model.fit(X_abs)
     W2d, H2d = model.normalize_WH(W, H, return_2d=True)
     Y = model.reconstruct(W, H) 
     plotspec(X_abs, W2d, H2d, Y, y_axis=y_axis)
     
     # Sources reconstructed with W and H
-    Y = model.get_sources(W, H) 
-    for k in range(0, n_basis):
-        plotspec(X_abs, W[:,k,:], H[k,:,:], Y[:,:,k], y_axis=y_axis)
+    #Y = model.get_sources(W, H) 
+    #for k in range(0, n_basis):
+        #plotspec(X_abs, W[:,k,:], H[k,:,:], Y[:,:,k], y_axis=y_axis)
         #y_est = fast_griffin_lim(Y[:,:,k], np.angle(X), n_fft=n_fft, hop_length=hop_length, window=window)
         #librosa.output.write_wav('reconst_'+str(k)+'.wav', y_est, sr)
         
